@@ -3,11 +3,16 @@ Runs FreqBridge vs PID side-by-side under identical East shock conditions.
 Outputs a clean comparison plot saved to data/recovery_comparison.png
 """
 
+import sys
+import os
 import copy
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 from src.sim.simulation_loop import FreqBridgeSimulation, SimulationConfig
 
 SHOCK_TICK = 10       # inject shock at tick 10

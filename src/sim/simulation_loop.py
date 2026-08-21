@@ -31,6 +31,16 @@ class SimulationConfig:
     # Economics
     price_ceiling: float = 100.0
 
+    # Converter flow smoothing (Bug 1 fix)
+    # The auction re-clears from scratch every tick based on that tick's
+    # instantaneous bids/asks, so the raw requested flow is noisy even
+    # during a single sustained deficit (weather volatility, bid/ask churn).
+    # We EMA-smooth the requested flow before handing it to the converter so
+    # it converges to a steady value instead of chattering tick to tick.
+    # alpha = 1.0 disables smoothing (raw passthrough, old behavior).
+    # Lower alpha = more smoothing / slower to track genuine step changes.
+    flow_smoothing_alpha: float = 0.15
+
 
 class FreqBridgeSimulation:
     """Orchestrates the entire FreqBridge ecosystem."""
@@ -45,6 +55,7 @@ class FreqBridgeSimulation:
         self.FREQ_STABLE_THRESHOLD = 0.05     # Hz — recovery confirmed below this
         self.in_crisis = False
         self.last_trades=[]
+        self.smoothed_flow_request = 0.0  # EMA state for converter flow (Bug 1 fix)
 
         # 1. Initialize ODE Physics
         self.freq_model = FrequencyModel()
@@ -197,8 +208,22 @@ class FreqBridgeSimulation:
             
         # 4. Update Converter State
         # Determine net requested physical flow
+        #
+        # Bug 1 fix: don't feed the converter the raw per-tick request as-is.
+        # The auction re-clears from scratch every tick from that tick's
+        # instantaneous bids/asks, so net_flow_request is noisy even during a
+        # single sustained deficit (weather volatility -> generation noise ->
+        # bid/ask volume noise -> requested-flow noise). Feeding that raw
+        # value straight into the converter makes delivered power stutter up
+        # and down instead of holding steady while the underlying crisis is
+        # unchanged. We EMA-smooth the request first so the converter tracks
+        # the real trend rather than the tick-to-tick jitter.
+        alpha = self.config.flow_smoothing_alpha
+        self.smoothed_flow_request = (
+            alpha * net_flow_request + (1.0 - alpha) * self.smoothed_flow_request
+        )
+        net_flow_request = self.smoothed_flow_request
 
-        
         if net_flow_request > 0:
             # East to West flow
             actual_flow = self.converter.can_transfer(net_flow_request, "east_to_west")
@@ -262,6 +287,7 @@ class FreqBridgeSimulation:
             "trades_count": trades_count,
             "volume_cleared_mw": volume_cleared_mw,
             "hvdc_flow_mw": self.converter.current_transfer_mw,
+            "smoothed_flow_request_mw": self.smoothed_flow_request,
             "price_east": price_east,
             "price_west": price_west,
             "freq_east": east_freq,
