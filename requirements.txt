@@ -17,3 +17,6 @@ pytest>=7.3
 
 # Data handling
 pandas>=2.0
+
+# Plotting (used by scripts/run_full_sim.py for the comparison HTML report)
+plotly>=5.18

@@ -8,6 +8,8 @@ FreqBridge is a decentralized multi-agent system that eliminates the *decision-l
 
 ## Quick Start
 
+> **Full step-by-step instructions (including what to run once vs. every time) are in [RUNNING.md](RUNNING.md).** This section is the short version.
+
 ### Prerequisites
 - Python 3.10+
 - pip
@@ -92,11 +94,23 @@ See [docs/architecture.md](docs/architecture.md) for detailed system design.
 | Transmission loss | 2% | Applied to cross-region trades |
 | Hedge trigger | 70% P(blackout) | Demo-tuned threshold for SURVIVAL mode |
 | Tick duration | 5m grid time | Configurable in settings.toml |
+| Flow smoothing (`flow_smoothing_alpha`) | 0.25 | EMA smoothing on requested converter flow, `SimulationConfig` in `src/sim/simulation_loop.py`. Lower = steadier/slower to react, higher (toward 1.0) = raw/noisier. Tune per demo scene in `src/backend/runner.py`'s `_create_sim()`. |
+
+Live weather (`src/physics/live_weather.py`) fetches current cloud cover / wind from Open-Meteo for Tokyo and Osaka on simulation start. If that API is unreachable (offline, rate-limited, blocked), it falls back to fixed default capacity factors and logs a warning instead of crashing.
 
 ---
 ## Validation
 
 The frequency ODE was validated against a synthetic disturbance spike — a -0.1 pu generation loss on the East side produces the expected under-frequency nadir and recovery curve. See `data/validation_spike.png`.
+
+---
+
+## Recent Fixes
+
+- **Converter flow stuttering (fixed):** the double auction re-clears from scratch every tick off that tick's instantaneous bids/asks, so during a sustained one-sided deficit the requested converter flow used to bounce tick-to-tick instead of holding steady (weather noise → generation noise → bid volume noise → requested-flow noise). Fixed by EMA-smoothing the requested flow (`flow_smoothing_alpha` in `SimulationConfig`, `src/sim/simulation_loop.py`) before it's handed to the converter. Cuts tick-to-tick jitter by ~4x in testing without changing average delivered power. Regression test: `tests/test_simulation_loop.py`.
+- **Full-sim crash on network failure (fixed):** `scripts/run_full_sim.py` used to hard-crash if `api.open-meteo.com` was unreachable. `src/physics/live_weather.py` now falls back to fixed default capacity factors and logs a warning instead.
+- **Missing dependency (fixed):** `plotly`, used by `scripts/run_full_sim.py` to generate the comparison HTML, is now listed in `requirements.txt`.
+
 ## License
 
 MIT
