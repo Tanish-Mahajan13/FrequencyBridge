@@ -44,6 +44,18 @@
             </div>
         </header>
 
+        <!-- GRID ANALYST PANEL (Gemini-powered live commentary) -->
+        <section class="panel llm-panel" id="llm-panel">
+            <div id="llm-header">
+                <span id="llm-icon">🤖</span>
+                <span id="llm-title">Grid Analyst</span>
+                <span id="llm-confidence" class="badge">—</span>
+                <span id="llm-loading" style="display:none">Analyzing...</span>
+                <span id="llm-tick">tick —</span>
+            </div>
+            <div id="llm-text">Waiting for simulation data...</div>
+        </section>
+
         <!-- MAIN CONTENT AREA -->
         <main class="main-grid">
             <!-- LEFT PANEL: Weather Intelligence -->
@@ -150,6 +162,7 @@
     <script src="js/websocket.js"></script>
     <script src="js/topology.js"></script>
     <script src="js/charts.js"></script>
+    <script src="js/llm.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 # --- Environments & secrets ---
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 secrets.json
@@ -41,5 +42,3 @@ notebooks/scratch_*.ipynb
 *.mov
 *.avi
 *.mkv
-
-

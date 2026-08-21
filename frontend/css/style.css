@@ -127,6 +127,74 @@ h3 {
     gap: 10px;
 }
 
+/* Grid Analyst Panel */
+.llm-panel {
+    background: linear-gradient(180deg, var(--bg-panel) 0%, rgba(139, 92, 246, 0.06) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 8px;
+    padding: 12px 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
+#llm-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#llm-icon {
+    font-size: 1rem;
+}
+
+#llm-tick {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    text-transform: none;
+}
+
+.badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-muted);
+}
+
+.badge.high {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--color-success);
+}
+
+.badge.medium {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning);
+}
+
+#llm-loading {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--color-info);
+    text-transform: none;
+    animation: pulse 1.5s infinite;
+}
+
+#llm-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--color-text);
+}
+
 /* Main Grid */
 .main-grid {
     display: grid;

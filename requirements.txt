@@ -20,3 +20,8 @@ pandas>=2.0
 
 # Plotting (used by scripts/run_full_sim.py for the comparison HTML report)
 plotly>=5.18
+
+# LLM Grid Analyst panel (src/backend/llm_analyst.py)
+# NOTE: uses the current `google-genai` SDK, not the deprecated
+# `google-generativeai` package (which has stopped receiving updates).
+google-genai>=1.0

@@ -105,6 +105,14 @@ The frequency ODE was validated against a synthetic disturbance spike — a -0.1
 
 ---
 
+## Grid Analyst Panel (Gemini)
+
+The live dashboard includes a "Grid Analyst" panel (top of the page) that periodically asks Gemini for a plain-English read on what's happening in the simulation — e.g. "East is in deficit, agents are routing 44MW West→East via the converter, frequency is recovering." It updates automatically every ~15 ticks and immediately on crisis-injection button clicks.
+
+- **Optional feature** — no `GEMINI_API_KEY`? The panel still works, just with built-in rule-based commentary instead of Gemini (shown as "medium" confidence vs "high"). Set it up via `.env` (see [RUNNING.md](RUNNING.md)) — copy `.env.example` to `.env` and paste your key in, no manual `export` needed.
+- New endpoint: `POST /llm/analyze` (`src/backend/api.py`), rate-limited (15s cooldown for auto-polling, 3s for crisis/user-triggered calls) and cached so it can't hammer the Gemini API.
+- Analyst logic lives in `src/backend/llm_analyst.py`. Uses the current `google-genai` SDK — not the deprecated `google-generativeai` package.
+
 ## Recent Fixes
 
 - **Converter flow stuttering (fixed):** the double auction re-clears from scratch every tick off that tick's instantaneous bids/asks, so during a sustained one-sided deficit the requested converter flow used to bounce tick-to-tick instead of holding steady (weather noise → generation noise → bid volume noise → requested-flow noise). Fixed by EMA-smoothing the requested flow (`flow_smoothing_alpha` in `SimulationConfig`, `src/sim/simulation_loop.py`) before it's handed to the converter. Cuts tick-to-tick jitter by ~4x in testing without changing average delivered power. Regression test: `tests/test_simulation_loop.py`.

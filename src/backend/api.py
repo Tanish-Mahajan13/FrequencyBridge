@@ -1,15 +1,18 @@
 import asyncio
 import json
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.backend.runner import SimulationRunner
+from src.backend.llm_analyst import GridAnalyst
 
 # Global single instance wrapper
 runner = SimulationRunner()
+analyst = GridAnalyst()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,6 +83,36 @@ async def get_topology():
 @app.get("/logs")
 async def get_logs():
     return {"logs": runner.logs}
+
+# LLM GRID ANALYST
+# Rate-limited so a busy dashboard (WebSocket pushes state at 2Hz) can't
+# hammer the Gemini API. "auto" calls (frontend polling every ~15 ticks)
+# use the full 15s cooldown; "crisis"/"user" triggers (button clicks) get a
+# shorter cooldown so a demo moment feels responsive, but still can't be
+# button-mashed into spamming the API.
+_last_llm_call_time = {"auto": 0.0, "crisis": 0.0, "user": 0.0}
+_llm_cache = None
+_LLM_COOLDOWN_SECONDS = {"auto": 15.0, "crisis": 3.0, "user": 3.0}
+
+@app.post("/llm/analyze")
+async def llm_analyze(request: Request):
+    global _llm_cache
+
+    body = await request.json()
+    trigger = body.get("trigger", "auto")
+    if trigger not in _LLM_COOLDOWN_SECONDS:
+        trigger = "auto"
+    state = body.get("state") or runner.get_frontend_state()
+
+    now = time.time()
+    cooldown = _LLM_COOLDOWN_SECONDS[trigger]
+    if now - _last_llm_call_time[trigger] < cooldown and _llm_cache is not None:
+        return _llm_cache  # Return cached, don't hammer the API
+
+    result = await asyncio.to_thread(analyst.analyze, state)
+    _last_llm_call_time[trigger] = now
+    _llm_cache = result
+    return result
 
 # WEBSOCKET
 active_connections = []

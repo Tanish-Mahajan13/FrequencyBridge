@@ -31,7 +31,24 @@ Activate the environment first (see [Activating the virtual environment](#activa
 pip install -r requirements.txt
 ```
 
-This installs numpy, scipy, matplotlib, fastapi, uvicorn, pandas, plotly, and everything else the project needs. You only need to re-run this if `requirements.txt` changes (e.g. after pulling new commits).
+This installs numpy, scipy, matplotlib, fastapi, uvicorn, pandas, plotly, google-genai, python-dotenv, and everything else the project needs. You only need to re-run this if `requirements.txt` changes (e.g. after pulling new commits).
+
+### 4. (Optional) Set up your Gemini API key
+
+The live dashboard has a "Grid Analyst" panel that asks Gemini for a plain-English read on what's happening in the simulation. It's optional — without a key, the panel still works using built-in rule-based commentary (labeled "medium" confidence instead of "high").
+
+Get a free key from [Google AI Studio](https://aistudio.google.com/apikey), then:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and paste your key in:
+```
+GEMINI_API_KEY=your-key-here
+```
+
+That's it — `.env` is loaded automatically every time the backend starts, no need to `export` it manually or repeat this per terminal session. `.env` is already in `.gitignore`, so your key won't accidentally get committed.
 
 That's it for one-time setup. Everything below this line, you'll do every time you want to work on or demo the project.
 
@@ -57,7 +74,7 @@ You'll know it worked because your terminal prompt will show `(.venv)` at the st
 
 ### 2. Run whichever of these you need
 
-All of these assume you're in the repo root with the venv activated.
+All of these assume you're in the repo root with the venv activated. If you set up `.env` with your Gemini key in step 4 above, it'll be picked up automatically — nothing extra to do here.
 
 **Run the test suite** — confirms nothing is broken:
 ```bash
