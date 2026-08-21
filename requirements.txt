@@ -25,3 +25,5 @@ plotly>=5.18
 # NOTE: uses the current `google-genai` SDK, not the deprecated
 # `google-generativeai` package (which has stopped receiving updates).
 google-genai>=1.0
+
+python-dotenv
