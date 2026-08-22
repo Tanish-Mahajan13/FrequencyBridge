@@ -74,19 +74,9 @@
                 </div>
             </aside>
 
-            <!-- CENTER PANEL: Topology Grid -->
+            <!-- CENTER PANEL: Japan Grid Map -->
             <section class="panel center-panel">
-                <div class="header-group">
-                    <h2>Live Grid Topology</h2>
-                    <div class="view-toggle">
-                        <button id="btn-view-map" class="btn outline view-active">Map</button>
-                        <button id="btn-view-graph" class="btn outline">Graph</button>
-                    </div>
-                </div>
-                <div class="topology-container" id="topology-canvas-container" style="display:none;">
-                    <!-- Canvas will be injected by topology.js -->
-                    <canvas id="topology-canvas"></canvas>
-                </div>
+                <h2>Live Grid Topology — Japan</h2>
                 <div class="topology-container" id="japan-map-container">
                     <div id="japan-map"></div>
                 </div>
@@ -171,34 +161,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="js/websocket.js"></script>
-    <script src="js/topology.js"></script>
     <script src="js/map.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/llm.js"></script>
     <script src="js/app.js"></script>
-    <script>
-        // View toggle: Map <-> Graph topology
-        const btnMap = document.getElementById('btn-view-map');
-        const btnGraph = document.getElementById('btn-view-graph');
-        const mapContainer = document.getElementById('japan-map-container');
-        const graphContainer = document.getElementById('topology-canvas-container');
-
-        btnMap.addEventListener('click', () => {
-            mapContainer.style.display = '';
-            graphContainer.style.display = 'none';
-            btnMap.classList.add('view-active');
-            btnGraph.classList.remove('view-active');
-            if (window.freqBridgeMap) window.freqBridgeMap.invalidateSize();
-        });
-
-        btnGraph.addEventListener('click', () => {
-            mapContainer.style.display = 'none';
-            graphContainer.style.display = '';
-            btnGraph.classList.add('view-active');
-            btnMap.classList.remove('view-active');
-            // Container was 0x0 while hidden — re-measure now that it's visible.
-            if (window.resizeTopologyCanvas) window.resizeTopologyCanvas();
-        });
-    </script>
 </body>
 </html>
