@@ -334,6 +334,91 @@ h3 {
     overflow: hidden;
 }
 
+/* View toggle (Map / Graph) */
+.view-toggle {
+    display: flex;
+    gap: 6px;
+}
+
+.view-toggle .btn {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+}
+
+.view-toggle .btn.view-active {
+    background-color: rgba(56, 189, 248, 0.15);
+    color: var(--color-info);
+    border-color: var(--color-info);
+}
+
+/* Japan map */
+#japan-map-container {
+    background: #0B1020;
+}
+
+#japan-map {
+    width: 100%;
+    height: 100%;
+    min-height: 300px;
+    border-radius: 4px;
+}
+
+.freqbridge-marker-label {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: #E5E7EB;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 3px #000;
+    white-space: nowrap;
+}
+
+.hvdc-marker {
+    background: var(--color-info);
+    border: 1px solid #fff;
+    border-radius: 4px;
+    color: #04202f;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.1;
+    padding: 4px 2px;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+}
+
+.flow-line-active {
+    animation: flow-dash 0.6s linear infinite;
+}
+
+@keyframes flow-dash {
+    to {
+        stroke-dashoffset: -20;
+    }
+}
+
+.leaflet-popup-content-wrapper {
+    background: var(--bg-panel);
+    color: var(--color-text);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: var(--font-main);
+}
+
+.leaflet-popup-tip {
+    background: var(--bg-panel);
+}
+
+.leaflet-popup-content {
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.leaflet-popup-content b {
+    color: var(--color-info);
+}
+
 /* Buttons */
 .btn {
     padding: 6px 12px;
