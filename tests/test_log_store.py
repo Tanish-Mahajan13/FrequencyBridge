@@ -111,6 +111,51 @@ class TestLogStoreNormalCase:
         assert any("reset" in m.lower() for m in messages)
 
 
+    def test_log_seq_keeps_incrementing_past_window_cap(self, temp_db_path):
+        """Regression test for the frontend freeze bug: once more than 20
+        total log lines are produced, the windowed `logs` array (last 20)
+        permanently pins at length 20. `log_seq` must keep incrementing
+        regardless, so the frontend can still detect new activity instead
+        of comparing against a length that never changes again."""
+        runner = SimulationRunner()
+        runner.log_store = LogStore(db_path=temp_db_path)
+        runner.session_id = runner.log_store.start_session()
+
+        for i in range(30):
+            runner.add_log(f"log line {i}")
+
+        state = runner.get_frontend_state()
+        assert len(state["logs"]) == 20, "windowed logs array should be pinned at 20"
+
+        seq_before = state["logs_seq"]
+        runner.add_log("one more line")
+        seq_after = runner.get_frontend_state()["logs_seq"]
+
+        assert seq_after == seq_before + 1, (
+            "logs_seq must keep incrementing even once the windowed array "
+            "length is pinned — this is what the frontend now diffs on"
+        )
+
+    def test_log_seq_survives_reset(self, temp_db_path):
+        """log_seq must not reset or go backwards on reset() — the frontend
+        relies on strict monotonicity to detect new logs after a reset."""
+        runner = SimulationRunner()
+        runner.log_store = LogStore(db_path=temp_db_path)
+        runner.session_id = runner.log_store.start_session()
+
+        for i in range(25):
+            runner.add_log(f"pre-reset line {i}")
+        seq_before_reset = runner.log_seq
+
+        runner.reset()
+        seq_after_reset = runner.log_seq
+
+        assert seq_after_reset > seq_before_reset, (
+            "reset() adds its own marker log, so log_seq should have "
+            "advanced, never reset backward to 0"
+        )
+
+
 class TestLogStoreFailureCase:
     def test_unavailable_db_reports_unavailable(self):
         # Pointing the "db file" at a path that's actually a directory
