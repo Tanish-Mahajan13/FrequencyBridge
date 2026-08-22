@@ -334,23 +334,6 @@ h3 {
     overflow: hidden;
 }
 
-/* View toggle (Map / Graph) */
-.view-toggle {
-    display: flex;
-    gap: 6px;
-}
-
-.view-toggle .btn {
-    padding: 4px 10px;
-    font-size: 0.7rem;
-}
-
-.view-toggle .btn.view-active {
-    background-color: rgba(56, 189, 248, 0.15);
-    color: var(--color-info);
-    border-color: var(--color-info);
-}
-
 /* Japan map */
 #japan-map-container {
     background: #0B1020;
