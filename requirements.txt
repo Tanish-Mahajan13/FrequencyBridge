@@ -25,5 +25,7 @@ plotly>=5.18
 # NOTE: uses the current `google-genai` SDK, not the deprecated
 # `google-generativeai` package (which has stopped receiving updates).
 google-genai>=1.0
+python-dotenv>=1.0
 
-python-dotenv
+# NOTE: Log persistence (src/backend/log_store.py) uses Python's built-in
+# sqlite3 module — no extra package needed, nothing to add here.

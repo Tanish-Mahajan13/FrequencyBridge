@@ -84,6 +84,19 @@ async def get_topology():
 async def get_logs():
     return {"logs": runner.logs}
 
+@app.get("/logs/history")
+async def get_logs_history(limit: int = 500):
+    """
+    Full persisted log history from the SQLite log store — survives
+    resets AND backend restarts, unlike /logs (which only reflects the
+    current rolling in-memory window). Returns [] if the store is
+    unavailable rather than erroring.
+    """
+    return {
+        "available": runner.log_store.is_available(),
+        "logs": runner.log_store.get_all(limit=limit),
+    }
+
 # LLM GRID ANALYST
 # Rate-limited so a busy dashboard (WebSocket pushes state at 2Hz) can't
 # hammer the Gemini API. "auto" calls (frontend polling every ~15 ticks)

@@ -33,6 +33,8 @@ pip install -r requirements.txt
 
 This installs numpy, scipy, matplotlib, fastapi, uvicorn, pandas, plotly, google-genai, python-dotenv, and everything else the project needs. You only need to re-run this if `requirements.txt` changes (e.g. after pulling new commits).
 
+Log persistence (`src/backend/log_store.py`) uses Python's built-in `sqlite3` module — nothing extra to install for that.
+
 ### 4. (Optional) Set up your Gemini API key
 
 The live dashboard has a "Grid Analyst" panel that asks Gemini for a plain-English read on what's happening in the simulation. It's optional — without a key, the panel still works using built-in rule-based commentary (labeled "medium" confidence instead of "high").
@@ -80,7 +82,7 @@ All of these assume you're in the repo root with the venv activated. If you set 
 ```bash
 python -m pytest tests/ -v
 ```
-Expect `38 passed`.
+Expect `53 passed`.
 
 **Run individual simulation scripts:**
 ```bash
@@ -114,6 +116,19 @@ python -m http.server 3000
 ```
 
 Then open **http://localhost:3000** in your browser.
+
+---
+
+## Log Persistence & Reset Behavior
+
+`/reset` (the Reset button in the dashboard) rebuilds the simulation from scratch, but **it no longer clears the log panel**. Instead:
+
+- The visible log panel keeps every prior entry and just adds a `[System] --- Simulation reset ---` marker, so you get one continuous log stream across resets instead of the panel going blank.
+- Every log line is also written to a lightweight SQLite database at `data/logs.sqlite3`, which survives not just `/reset` but a full backend restart (stop and re-run uvicorn — the history is still there).
+- Full persisted history (uncapped, unlike the rolling 100-entry panel) is available at `GET /logs/history?limit=500`.
+- If the database can't be written to for some reason (disk issue, permissions), logging degrades gracefully — the live panel keeps working, you just lose the durable copy for that session. It won't crash the simulation. See `tests/test_log_store.py` for both the normal-persistence and failure-degradation cases.
+
+`data/logs.sqlite3` is already covered by `.gitignore`'s `*.sqlite3` rule, so it won't get committed. Delete that file any time to start the persisted history over from scratch.
 
 ---
 

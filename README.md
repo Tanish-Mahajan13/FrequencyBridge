@@ -8,7 +8,7 @@ FreqBridge is a decentralized multi-agent system that eliminates the *decision-l
 
 ## Quick Start
 
-> **Full step-by-step instructions (including what to run once vs. every time) are in [RUNNING.md](RUNNING.md).** This section is the short version.
+> **Full step-by-step instructions (including what to run once vs. every time) are in [running.md](running.md).** This section is the short version.
 
 ### Prerequisites
 - Python 3.10+
@@ -109,15 +109,20 @@ The frequency ODE was validated against a synthetic disturbance spike — a -0.1
 
 The live dashboard includes a "Grid Analyst" panel (top of the page) that periodically asks Gemini for a plain-English read on what's happening in the simulation — e.g. "East is in deficit, agents are routing 44MW West→East via the converter, frequency is recovering." It updates automatically every ~15 ticks and immediately on crisis-injection button clicks.
 
-- **Optional feature** — no `GEMINI_API_KEY`? The panel still works, just with built-in rule-based commentary instead of Gemini (shown as "medium" confidence vs "high"). Set it up via `.env` (see [RUNNING.md](RUNNING.md)) — copy `.env.example` to `.env` and paste your key in, no manual `export` needed.
+- **Optional feature** — no `GEMINI_API_KEY`? The panel still works, just with built-in rule-based commentary instead of Gemini (shown as "medium" confidence vs "high"). Set it up via `.env` (see [running.md](running.md)) — copy `.env.example` to `.env` and paste your key in, no manual `export` needed.
 - New endpoint: `POST /llm/analyze` (`src/backend/api.py`), rate-limited (15s cooldown for auto-polling, 3s for crisis/user-triggered calls) and cached so it can't hammer the Gemini API.
 - Analyst logic lives in `src/backend/llm_analyst.py`. Uses the current `google-genai` SDK — not the deprecated `google-generativeai` package.
+
+## Persistent Session Logs
+
+`/reset` no longer wipes the log panel. It keeps the running log history and just adds a `[System] --- Simulation reset ---` marker, so a demo's log trail reads as one continuous session. Every log line is also durably persisted to a lightweight SQLite database (`data/logs.sqlite3`, stdlib-only, no extra dependency) via `src/backend/log_store.py` — this survives a full backend restart, not just a reset. Full uncapped history: `GET /logs/history`. If the database can't be written to, logging degrades to a safe no-op instead of crashing the sim — see `tests/test_log_store.py` for both cases.
 
 ## Recent Fixes
 
 - **Converter flow stuttering (fixed):** the double auction re-clears from scratch every tick off that tick's instantaneous bids/asks, so during a sustained one-sided deficit the requested converter flow used to bounce tick-to-tick instead of holding steady (weather noise → generation noise → bid volume noise → requested-flow noise). Fixed by EMA-smoothing the requested flow (`flow_smoothing_alpha` in `SimulationConfig`, `src/sim/simulation_loop.py`) before it's handed to the converter. Cuts tick-to-tick jitter by ~4x in testing without changing average delivered power. Regression test: `tests/test_simulation_loop.py`.
 - **Full-sim crash on network failure (fixed):** `scripts/run_full_sim.py` used to hard-crash if `api.open-meteo.com` was unreachable. `src/physics/live_weather.py` now falls back to fixed default capacity factors and logs a warning instead.
 - **Missing dependency (fixed):** `plotly`, used by `scripts/run_full_sim.py` to generate the comparison HTML, is now listed in `requirements.txt`.
+- **Missing dependency (fixed):** `python-dotenv`, required by `src/backend/llm_analyst.py` at import time, was missing from `requirements.txt` — a fresh `pip install` would install successfully but then crash immediately on starting the backend or running `pytest`. Now listed.
 
 ## License
 

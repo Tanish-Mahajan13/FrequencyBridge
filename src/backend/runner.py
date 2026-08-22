@@ -8,6 +8,7 @@ import time
 from typing import Dict, Any, List
 
 from src.sim.simulation_loop import FreqBridgeSimulation, SimulationConfig
+from src.backend.log_store import LogStore
 
 
 class SimulationRunner:
@@ -17,6 +18,13 @@ class SimulationRunner:
         self.dt_seconds = 1.0  # Speed of simulation: 1 real second = 1 tick (5 mins simulation)
         self.task = None
         self.logs: List[str] = []
+
+        # Lightweight persistent log store (SQLite). Logs survive `/reset`
+        # and even a full backend restart — the in-memory `self.logs` list
+        # above is just a capped rolling window for fast API/WebSocket
+        # responses; this is the durable record.
+        self.log_store = LogStore()
+        self.session_id = self.log_store.start_session()
         
     def _create_sim(self) -> FreqBridgeSimulation:
         config = SimulationConfig(
@@ -39,8 +47,17 @@ class SimulationRunner:
     def reset(self):
         self.pause()
         self.sim = self._create_sim()
-        self.logs.clear()
-        self.add_log("[System] Simulation reset.")
+
+        # NOTE: we intentionally do NOT clear self.logs here. Previously
+        # `/reset` wiped the entire visible log panel, losing the session's
+        # history. Now: the rolling panel keeps going (still capped at 100
+        # entries by add_log(), oldest entries drop off as normal), and a
+        # reset just adds a clear marker into that same continuous stream.
+        # The full, uncapped history is additionally persisted in
+        # log_store's SQLite DB, so it survives even a full backend restart
+        # (not just a reset) — see src/backend/log_store.py.
+        self.session_id = self.log_store.start_session()
+        self.add_log("[System] --- Simulation reset ---")
 
     def inject_cloud_shock(self):
         """Global shock - hits both sides."""
@@ -83,6 +100,9 @@ class SimulationRunner:
         self.logs.append(msg)
         if len(self.logs) > 100:
             self.logs.pop(0)
+        # Durable copy — uncapped, survives resets and backend restarts.
+        # Never raises, so a storage hiccup can't break the sim loop.
+        self.log_store.insert(self.session_id, self.sim.current_tick, msg)
 
     async def _loop(self):
         while self.is_running:
