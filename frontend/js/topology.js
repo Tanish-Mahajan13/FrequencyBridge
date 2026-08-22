@@ -6,20 +6,34 @@ let animationTime = 0;
 
 function resize() {
     const container = document.getElementById('topology-canvas-container');
-    // Container is 0x0 while its panel is toggled to display:none (e.g. Map
-    // view is active), so skip resizing in that case rather than collapsing
-    // the canvas to 0x0 — resizeTopologyCanvas() is called explicitly by the
-    // view-toggle handler in index.html right when the Graph panel becomes
-    // visible again.
     if (container.clientWidth === 0 || container.clientHeight === 0) return;
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
 }
 window.addEventListener('resize', resize);
 resize();
-// Exposed so index.html's view-toggle can force a re-measure the moment the
-// (previously hidden) graph panel is shown again.
+// Exposed for anything that wants to force a re-measure explicitly.
 window.resizeTopologyCanvas = resize;
+
+// Belt-and-braces fix for the "canvas stuck at 0x0" problem: the container
+// starts at display:none (Map view is the default), so canvas.width/height
+// never get set until it becomes visible. Rather than relying solely on a
+// view-toggle button remembering to call resize(), watch the container's
+// actual box size directly — this fires the instant display:none is lifted
+// (0x0 -> real size), on window resizes, and on any other layout change,
+// with no dependency on other code calling in at the right time.
+if (typeof ResizeObserver !== 'undefined') {
+    const topologyResizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (width > 0 && height > 0) {
+                canvas.width = width;
+                canvas.height = height;
+            }
+        }
+    });
+    topologyResizeObserver.observe(document.getElementById('topology-canvas-container'));
+}
 
 const COLORS = {
     "Green": "#22C55E",
@@ -33,11 +47,25 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     animationTime += 0.05;
 
-    if (!lastState || !lastState.topology) {
+    if (!lastState || !lastState.topology || canvas.width === 0 || canvas.height === 0) {
         requestAnimationFrame(draw);
         return;
     }
 
+    try {
+        renderTopology();
+    } catch (err) {
+        // A thrown error here would otherwise kill the requestAnimationFrame
+        // chain permanently, leaving the canvas silently blank forever with
+        // no visible sign of what went wrong. Log it and keep the loop alive
+        // so a transient bad frame doesn't take down all future rendering.
+        console.error('Topology draw() failed:', err);
+    }
+
+    requestAnimationFrame(draw);
+}
+
+function renderTopology() {
     const nodes = lastState.topology.nodes;
     const eastNodes = nodes.filter(n => n.region === 'east');
     const westNodes = nodes.filter(n => n.region === 'west');
@@ -127,8 +155,6 @@ function draw() {
 
     // West Nodes (Right)
     drawNodes(westNodes, canvas.width - 100, false);
-
-    requestAnimationFrame(draw);
 }
 
 simStream.subscribe((state) => {
