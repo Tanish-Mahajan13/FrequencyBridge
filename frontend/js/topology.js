@@ -6,11 +6,20 @@ let animationTime = 0;
 
 function resize() {
     const container = document.getElementById('topology-canvas-container');
+    // Container is 0x0 while its panel is toggled to display:none (e.g. Map
+    // view is active), so skip resizing in that case rather than collapsing
+    // the canvas to 0x0 — resizeTopologyCanvas() is called explicitly by the
+    // view-toggle handler in index.html right when the Graph panel becomes
+    // visible again.
+    if (container.clientWidth === 0 || container.clientHeight === 0) return;
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
 }
 window.addEventListener('resize', resize);
 resize();
+// Exposed so index.html's view-toggle can force a re-measure the moment the
+// (previously hidden) graph panel is shown again.
+window.resizeTopologyCanvas = resize;
 
 const COLORS = {
     "Green": "#22C55E",
