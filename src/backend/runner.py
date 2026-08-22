@@ -19,6 +19,17 @@ class SimulationRunner:
         self.task = None
         self.logs: List[str] = []
 
+        # Monotonically increasing counter, incremented on every add_log()
+        # call and NEVER reset (not even by reset()). Exists because
+        # `self.logs` sent to the frontend is capped to the last 20 entries
+        # (see get_frontend_state) — once more than 20 total log lines have
+        # ever been produced, `len(self.logs[-20:])` is permanently pinned
+        # at 20. The frontend used to diff on that array's length to detect
+        # "is there anything new," which silently froze forever once the
+        # window filled up. This counter gives it something unambiguous to
+        # compare against instead.
+        self.log_seq = 0
+
         # Lightweight persistent log store (SQLite). Logs survive `/reset`
         # and even a full backend restart — the in-memory `self.logs` list
         # above is just a capped rolling window for fast API/WebSocket
@@ -100,6 +111,7 @@ class SimulationRunner:
         self.logs.append(msg)
         if len(self.logs) > 100:
             self.logs.pop(0)
+        self.log_seq += 1
         # Durable copy — uncapped, survives resets and backend restarts.
         # Never raises, so a storage hiccup can't break the sim loop.
         self.log_store.insert(self.session_id, self.sim.current_tick, msg)
@@ -237,6 +249,7 @@ class SimulationRunner:
             },
             "last_trades": self.sim.last_trades,
             "logs": self.logs[-20:], # Only send last 20 logs
+            "logs_seq": self.log_seq, # Monotonic counter — never resets, never pins. Use THIS to detect "is there anything new," not len(logs).
             "history": {
                 "freq_east": [h["freq_east"] for h in self.sim.history[-60:]],
                 "freq_west": [h["freq_west"] for h in self.sim.history[-60:]],
