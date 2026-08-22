@@ -25,7 +25,7 @@ function fmtNum(val, decimals = 2) {
 }
 
 // UI Updating
-let previousLogLen = 0;
+let lastLogsSeq = -1;
 
 simStream.subscribe((state) => {
     // 0. Status Indicator & Mode Button
@@ -80,15 +80,21 @@ simStream.subscribe((state) => {
     westFreq.style.color = Math.abs(state.kpis.west_freq - 60) > 0.1 ? 'var(--color-danger)' : 'var(--color-info)';
 
     // 2. Terminals logs
+    //
+    // Rebuild the (small, <=20-line) tail window whenever logs_seq changes,
+    // rather than trying to append-diff based on state.logs.length. That
+    // array is always the last-20 window from the backend, so its length
+    // permanently pins at 20 once more than 20 log lines have ever been
+    // produced (which happens within the first ~20 seconds of any run) —
+    // comparing lengths against a pinned value silently froze the panel
+    // forever. logs_seq is a monotonic counter that's never ambiguous.
     const logsContainer = document.getElementById('logs-container');
-    const logs = state.logs;
-    if (logs && logs.length > previousLogLen) {
-        // Append new logs
-        for (let i = previousLogLen; i < logs.length; i++) {
+    if (state.logs_seq !== undefined && state.logs_seq !== lastLogsSeq) {
+        logsContainer.innerHTML = '';
+        (state.logs || []).forEach(txt => {
             const row = document.createElement('div');
             row.className = 'log-entry';
 
-            const txt = logs[i];
             if (txt.includes('[Auction]')) row.classList.add('auction');
             else if (txt.includes('[Converter]')) row.classList.add('converter');
             else if (txt.includes('[Error]') || txt.includes('[Freq')) row.classList.add('warning');
@@ -96,13 +102,9 @@ simStream.subscribe((state) => {
 
             row.textContent = `> ${txt}`;
             logsContainer.appendChild(row);
-        }
+        });
         logsContainer.scrollTop = logsContainer.scrollHeight;
-        previousLogLen = logs.length;
-    } else if (logs && logs.length < previousLogLen) {
-        // Must have reset
-        logsContainer.innerHTML = '';
-        previousLogLen = 0;
+        lastLogsSeq = state.logs_seq;
     }
 
     // 3. Agent Telemetry Table
