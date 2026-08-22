@@ -28,13 +28,23 @@ let hvdcMarker = null;
 function initJapanMap() {
     if (freqBridgeMap) return;
 
+    // Bounding box roughly covering the Japanese archipelago (Kyushu to
+    // Hokkaido), used both to seed the initial view and to stop the user
+    // from panning/zooming out to a world view.
+    const JAPAN_BOUNDS = L.latLngBounds([28.5, 126.0], [43.5, 145.5]);
+
     freqBridgeMap = L.map('japan-map', {
         center: [36.5, 136.5],
         zoom: 6,
+        minZoom: 5,           // furthest you can zoom out — Japan still fills the view
+        maxZoom: 12,          // furthest you can zoom in — street/city level
+        maxBounds: JAPAN_BOUNDS.pad(0.15),
+        maxBoundsViscosity: 1.0, // hard stop at the bounds, no rubber-banding past them
         zoomControl: false,
         attributionControl: true
     });
     window.freqBridgeMap = freqBridgeMap;
+    freqBridgeMap.fitBounds(JAPAN_BOUNDS);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
