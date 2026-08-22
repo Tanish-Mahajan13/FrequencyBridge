@@ -196,6 +196,8 @@
             graphContainer.style.display = '';
             btnGraph.classList.add('view-active');
             btnMap.classList.remove('view-active');
+            // Container was 0x0 while hidden — re-measure now that it's visible.
+            if (window.resizeTopologyCanvas) window.resizeTopologyCanvas();
         });
     </script>
 </body>
